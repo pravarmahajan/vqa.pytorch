@@ -12,7 +12,7 @@ vqa:
     samplingans: True
 coco:
     dir: data/coco
-    arch: fbresnet152
+    arch: resnet152
     mode: noatt
     size: 448
 model:
@@ -41,4 +41,4 @@ model:
 optim:
     lr: 0.0001
     batch_size: 512
-    epochs: 100
+    epochs: 5

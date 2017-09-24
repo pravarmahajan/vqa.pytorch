@@ -16,10 +16,17 @@ torch7_resnet_names = sorted(name for name in torch7_models.__dict__
     if name.islower()
     and callable(torch7_models.__dict__[name]))
 
-model_names = pytorch_resnet_names + torch7_resnet_names
+model_names = pytorch_resnet_names + torch7_resnet_names + ['vgg']
 
 def factory(opt, cuda=True, data_parallel=True):
     opt = copy.copy(opt)
+
+    def forward_vgg(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier[0](x)
+        x = self.classifier[1](x)
+        return x
 
     # forward_* will be better handle in futur release
     def forward_resnet(self, x):
@@ -66,7 +73,7 @@ def factory(opt, cuda=True, data_parallel=True):
                                                     pretrained='imagenet')
 
         convnet = model # ugly hack in case of DataParallel wrapping
-        model.forward = lambda x: forward_resnet(convnet, x)
+        #model.forward = lambda x: forward_resnet(convnet, x)
 
     elif opt['arch'] in torch7_resnet_names:
         model = torch7_models.__dict__[opt['arch']](num_classes=1000,
@@ -74,6 +81,12 @@ def factory(opt, cuda=True, data_parallel=True):
         
         convnet = model # ugly hack in case of DataParallel wrapping
         model.forward = lambda x: forward_resnext(convnet, x)
+
+    elif opt['arch']=='vgg':
+        model = pytorch_models.__dict__['vgg19'](pretrained=True)
+
+        convnet = model # ugly hack in case of DataParallel wrapping
+        model.forward = lambda x: forward_vgg(convnet, x)
 
     else:
         raise ValueError

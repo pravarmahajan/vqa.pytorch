@@ -1,3 +1,4 @@
+import ipdb
 import os
 import pickle
 import torch
@@ -247,6 +248,7 @@ class VQAVisualGenome(data.Dataset):
 
 
 def factory(data_split, opt, opt_coco=None, opt_vgenome=None):
+    ipdb.set_trace()
     dataset_img = None
 
     if opt_coco is not None:

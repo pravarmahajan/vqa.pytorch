@@ -21,7 +21,6 @@ parser = argparse.ArgumentParser(
     description='Train/Evaluate models',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 ##################################################
-# yaml options file contains all default choices #
 parser.add_argument('--path_opt', default='options/vqa/default.yaml', type=str, 
                     help='path to a yaml options file')
 ################################################
@@ -121,7 +120,6 @@ def main():
     train_loader = trainset.data_loader(batch_size=options['optim']['batch_size'],
                                         num_workers=args.workers,
                                         shuffle=True)                                      
-
     if options['vqa']['trainsplit'] == 'train':
         valset = datasets.factory_VQA('val', options['vqa'], options['coco'])
         val_loader = valset.data_loader(batch_size=options['optim']['batch_size'],
@@ -138,7 +136,7 @@ def main():
     
     model = models.factory(options['model'],
                            trainset.vocab_words(), trainset.vocab_answers(),
-                           cuda=True, data_parallel=True)
+                           cuda=False, data_parallel=False)
     criterion = criterions.factory(options['vqa'], cuda=True)
     optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
                             options['optim']['lr'])
@@ -169,7 +167,6 @@ def main():
             yaml.dump(vars(args), f, default_flow_style=False)
         
     if exp_logger is None:
-        # Set loggers
         exp_name = os.path.basename(options['logs']['dir_logs']) # add timestamp
         exp_logger = logger.Experiment(exp_name, options)
         exp_logger.add_meters('train', make_meters())
@@ -180,7 +177,6 @@ def main():
         print('Model has {} parameters'.format(exp_logger.info['model_params']))
 
     #########################################################################################
-    # args.evaluate: on valset OR/AND on testset
     #########################################################################################
 
     if args.evaluate:
@@ -204,8 +200,6 @@ def main():
                      options['logs']['dir_logs'], options['vqa']['dir'])
         return
 
-    #########################################################################################
-    # Begin training on train/val or trainval/test
     #########################################################################################
 
     for epoch in range(args.start_epoch+1, options['optim']['epochs']):
@@ -302,7 +296,6 @@ def save_checkpoint(info, model, optim, dir_logs, save_model, save_all_from=None
         torch.save(info, path_ckpt_info)
         if is_best:
             shutil.copyfile(path_ckpt_info, path_best_info)
-        # save model state & optim state
         if save_model:
             torch.save(model, path_ckpt_model)
             torch.save(optim, path_ckpt_optim)
@@ -318,7 +311,6 @@ def save_checkpoint(info, model, optim, dir_logs, save_model, save_all_from=None
         path_logger = os.path.join(dir_logs, 'logger.json')
         info['exp_logger'].to_json(path_logger)
         torch.save(info, path_ckpt_info.format(info['epoch']))
-        # save model state & optim state
         if save_model:
             torch.save(model, path_ckpt_model.format(info['epoch']))
             torch.save(optim, path_ckpt_optim.format(info['epoch']))
